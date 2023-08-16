@@ -38,8 +38,8 @@ import java.io.IOException
 class MainActivity : AppCompatActivity(),
     AudioCallback{
 
-    private val DEFAULT_SAMPLE_RATE = SampleRate.SAMPLE_RATE_16K
-    private val DEFAULT_FRAME_SIZE = FrameSize.FRAME_SIZE_256
+    private val DEFAULT_SAMPLE_RATE = SampleRate.SAMPLE_RATE_48K
+    private val DEFAULT_FRAME_SIZE = FrameSize.FRAME_SIZE_512
     private val DEFAULT_MODE = Mode.NORMAL
     private val DEFAULT_SILENCE_DURATION_MS = 50
     private val DEFAULT_SPEECH_DURATION_MS = 100
@@ -58,29 +58,29 @@ class MainActivity : AppCompatActivity(),
     private val handler = Handler(Looper.getMainLooper())
     private var lastValue: String? = null
     private val onChangeTimeout: Long = 6000
-//    private lateinit var statusChangeDetector: StatusChangeDetector
+    private lateinit var statusChangeDetector: StatusChangeDetector
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         binding = ActivityMainBinding.inflate(layoutInflater)
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-        //BLUETOOTH
         val am = getSystemService(AUDIO_SERVICE) as AudioManager
-//        statusChangeDetector = StatusChangeDetector {
-//            executeFunction()
-//        }
+        statusChangeDetector = StatusChangeDetector {
+            executeFunction()
+        }
         registerReceiver(object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
-                Log.d( "BLUETOOTH HOME","Audio SCO state: $state")
+                // Log.d( "BLUETOOTH HOME","Audio SCO state: $state")
                 if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
 //                    unregisterReceiver(this)
-                    Log.d("BLUETOOTH HOME", "Audion Connected")
+                    // Log.d("BLUETOOTH HOME", "Audion Connected")
                     val am = getSystemService(AUDIO_SERVICE) as AudioManager
                     am.mode= AudioManager.MODE_IN_COMMUNICATION
                     am.isBluetoothScoOn=true
-                    Log.i("BLUETOOTH HOME", " Model   ${am.mode}")                }
+                    // Log.i("BLUETOOTH HOME", " Model   ${am.mode}")
+                 }
             }
         }, IntentFilter().apply{addAction(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)})
 
@@ -131,10 +131,7 @@ class MainActivity : AppCompatActivity(),
             .build()
 
         recorder = VoiceRecorder(this)
-
-
         speechTextView = binding.textView
-
         recordingButton = binding.btnRecord
         recordingButton.setOnClickListener{
             if (!isRecording) {
@@ -143,21 +140,7 @@ class MainActivity : AppCompatActivity(),
                 stopRecording()
             }
             }
-        recordingButton.isEnabled = true
 
-//        activateRecordingButtonWithPermissionCheck()
-
-
-//        binding.btnRecord.setOnClickListener {
-//            binding.btnStop.visibility = View.VISIBLE
-//            binding.btnRecord.visibility = View.INVISIBLE
-//            startRecording()
-//        }
-//        binding.btnStop.setOnClickListener{
-//            binding.btnRecord.visibility = View.VISIBLE
-//            binding.btnStop.visibility = View.INVISIBLE
-//            stopRecording()
-//        }
         binding.btnPlay.setOnClickListener{
             startPlaying()
         }
@@ -233,13 +216,13 @@ class MainActivity : AppCompatActivity(),
         }
         player = MediaPlayer()
         try {
-            Log.i("path playing",recorder!!.outputFile!!.absolutePath )
-            player!!.setDataSource(recorder!!.outputFile!!.absolutePath)
-            player!!.setAudioAttributes(
-                AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .build()
-            )
+//            Log.i("path playing",recorder!!.outputFile!!.absolutePath )
+//            player!!.setDataSource(recorder!!.outputFile!!.absolutePath)
+//            player!!.setAudioAttributes(
+//                AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+//                    .setUsage(AudioAttributes.USAGE_MEDIA)
+//                    .build()
+//            )
         } catch (e: IOException) {
         }
         try {
@@ -279,25 +262,14 @@ class MainActivity : AppCompatActivity(),
     override fun onAudio(audioData: ShortArray) {
         vad.setContinuousSpeechListener(audioData, object : VadListener {
             override fun onSpeechDetected() {
-//                statusChangeDetector.setStatus("speech")
-//                if( status !="speech"){
-//                    status = "speech"
-//                    statusChangeDetector.updateVariable("speech")
-////                    updateVariable("speech")
-//                }
+                statusChangeDetector.updateVariable("speech")
                 this@MainActivity.runOnUiThread { speechTextView.setText(R.string.speech_detected)
-
-  }
+                }
             }
 
             override fun onNoiseDetected() {
-//                if( status !="noise"){
-//                    status="noise"
-//                    statusChangeDetector.updateVariable("noise")
-////                    updateVariable("noise")
-//                }
+                statusChangeDetector.updateVariable("noise")
                 this@MainActivity.runOnUiThread { speechTextView.setText(R.string.noise_detected) }
-
         }
         })
     }
@@ -306,33 +278,24 @@ class MainActivity : AppCompatActivity(),
     private fun startRecording() {
         isRecording = true
         recorder.start(vad.sampleRate.value, vad.frameSize.value)
+        statusChangeDetector.startMonitoring()
         recordingButton.setBackgroundResource(R.drawable.ic_baseline_stop_circle_24)
-
     }
 
     private fun stopRecording() {
         isRecording = false
         recorder.stop()
         recordingButton.setBackgroundResource(R.drawable.ic_baseline_fiber_manual_record_24)
-        binding.textView.text = "Monitor stopped"
-//        stopMonitoring()
-//        statusChangeDetector.stopMonitoring()
+        speechTextView.text = "Start recording"
+        statusChangeDetector.stopMonitoring()
 
     }
 
 
-//    override fun onClick(v: View) {
-//        if (!isRecording) {
-//            startRecording()
-//        } else {
-//            stopRecording()
-//
-//        }
-//    }
-
 
     private fun executeFunction() {
         // This function will be called if the variable hasn't changed its value in the specified timeout
+        stopRecording()
         Log.i("STATUS", "Updating variable in MainActivity")
 
     }

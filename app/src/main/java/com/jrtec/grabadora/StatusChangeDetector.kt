@@ -4,7 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 
-class StatusChangeDetector(private val onChangeTimeout: Long = 4000,
+class StatusChangeDetector(private val onChangeTimeout: Long = 10000,
                            private val callback: () -> Unit) {
     private val handler = Handler(Looper.getMainLooper())
     private var lastValue: String? = null
@@ -12,7 +12,7 @@ class StatusChangeDetector(private val onChangeTimeout: Long = 4000,
 
     private val runnable = Runnable {
         // Check if the variable hasn't changed its value for the specified timeout
-        if (lastValue != null) {
+        if (lastValue == "noise") {
             // Execute your function here
             executeFunction()
         }
@@ -29,10 +29,12 @@ class StatusChangeDetector(private val onChangeTimeout: Long = 4000,
     }
 
     fun updateVariable(value: String) {
-        lastValue = value
-        Log.i("STATUS", "New Value $value")
-        handler.removeCallbacks(runnable)
-        handler.postDelayed(runnable, onChangeTimeout)
+        if (lastValue != value) {
+            lastValue = value
+//            Log.i("STATUS", "New Value $value")
+            handler.removeCallbacks(runnable)
+            handler.postDelayed(runnable, onChangeTimeout)
+        }
     }
 
     private fun executeFunction() {
