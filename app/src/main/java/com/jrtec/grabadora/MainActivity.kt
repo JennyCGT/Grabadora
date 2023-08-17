@@ -31,7 +31,6 @@ import com.jrtec.grabadora.Silero.config.Mode
 import com.jrtec.grabadora.Silero.config.SampleRate
 import com.jrtec.grabadora.databinding.ActivityMainBinding
 import com.jrtec.grabadora.VoiceRecorder.AudioCallback
-import com.jrtec.grabadora.VoiceRecorder
 import java.io.File
 import java.io.IOException
 
@@ -39,7 +38,7 @@ class MainActivity : AppCompatActivity(),
     AudioCallback{
 
     private val DEFAULT_SAMPLE_RATE = SampleRate.SAMPLE_RATE_48K
-    private val DEFAULT_FRAME_SIZE = FrameSize.FRAME_SIZE_512
+    private val DEFAULT_FRAME_SIZE = FrameSize.FRAME_SIZE_1536
     private val DEFAULT_MODE = Mode.NORMAL
     private val DEFAULT_SILENCE_DURATION_MS = 50
     private val DEFAULT_SPEECH_DURATION_MS = 100
@@ -278,6 +277,7 @@ class MainActivity : AppCompatActivity(),
     private fun startRecording() {
         isRecording = true
         recorder.start(vad.sampleRate.value, vad.frameSize.value)
+//        recorder.start()
         statusChangeDetector.startMonitoring()
         recordingButton.setBackgroundResource(R.drawable.ic_baseline_stop_circle_24)
     }
