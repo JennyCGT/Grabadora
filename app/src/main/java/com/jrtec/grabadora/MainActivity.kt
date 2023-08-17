@@ -23,9 +23,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.jrtec.grabadora.Silero.VadSilero
 import com.jrtec.grabadora.Silero.Vad
 import com.jrtec.grabadora.Silero.VadListener
-import com.jrtec.grabadora.Silero.VadSilero
 import com.jrtec.grabadora.Silero.config.FrameSize
 import com.jrtec.grabadora.Silero.config.Mode
 import com.jrtec.grabadora.Silero.config.SampleRate
@@ -37,8 +37,8 @@ import java.io.IOException
 class MainActivity : AppCompatActivity(),
     AudioCallback{
 
-    private val DEFAULT_SAMPLE_RATE = SampleRate.SAMPLE_RATE_48K
-    private val DEFAULT_FRAME_SIZE = FrameSize.FRAME_SIZE_1536
+    private val DEFAULT_SAMPLE_RATE = SampleRate.SAMPLE_RATE_16K
+    private val DEFAULT_FRAME_SIZE = FrameSize.FRAME_SIZE_512
     private val DEFAULT_MODE = Mode.NORMAL
     private val DEFAULT_SILENCE_DURATION_MS = 50
     private val DEFAULT_SPEECH_DURATION_MS = 100
@@ -58,6 +58,8 @@ class MainActivity : AppCompatActivity(),
     private var lastValue: String? = null
     private val onChangeTimeout: Long = 6000
     private lateinit var statusChangeDetector: StatusChangeDetector
+    var recorder_media: MediaRecorder? = null
+
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -174,54 +176,49 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-//    private fun startRecording() {
-//        Toast.makeText(applicationContext, "Recording", Toast.LENGTH_LONG).show()
-//        try {
-//            archivo = File.createTempFile("temporal", ".m4a", applicationContext.cacheDir)
-//        }catch (e:IOException){
+    private fun startRecordingFile() {
+        Toast.makeText(applicationContext, "Recording", Toast.LENGTH_LONG).show()
+        val any = try {
+            archivo = File.createTempFile("temporal", ".m4a", applicationContext.cacheDir)
+        } catch (e: IOException) {
+
+            Log.e("error archive", "$e")
+        }
+        recorder_media = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setOutputFile(archivo!!.absolutePath)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            try {
+                prepare()
+                start()
+            }catch (e:IllegalStateException ) {
+                Log.e("error", "prepare() failed ${e.printStackTrace()}")
+            } catch (e: IOException) {
+                Log.e("error", "prepare() failed")
+            }
+        }
+    }
 //
-//            Log.e("error archive", "$e")
-//        }
-//        recorder = MediaRecorder().apply {
-//            setAudioSource(MediaRecorder.AudioSource.MIC)
-//            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-//            setOutputFile(archivo!!.absolutePath)
-//            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-//            try {
-//                prepare()
-//                start()
-//            }catch (e:IllegalStateException ) {
-//                Log.e("error", "prepare() failed ${e.printStackTrace()}")
-//            } catch (e: IOException) {
-//                Log.e("error", "prepare() failed")
-//            }
-//        }
-//    }
-//
-//    private fun stopRecording() {
-//        recorder?.apply {
-//            stop()
-//            release()
-//        }
-//        recorder = null
-//        Handler(Looper.getMainLooper()).post {
-//            Toast.makeText(applicationContext, "Stop", Toast.LENGTH_SHORT).show()
-//        }
-//
-//    }
+    private fun stopRecordingFile() {
+        recorder_media?.apply {
+            stop()
+            release()
+        }
+        recorder_media = null
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(applicationContext, "Stop", Toast.LENGTH_SHORT).show()
+        }
+
+    }
     private fun startPlaying() {
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(applicationContext, "Play the message", Toast.LENGTH_SHORT).show()
         }
         player = MediaPlayer()
         try {
-//            Log.i("path playing",recorder!!.outputFile!!.absolutePath )
-//            player!!.setDataSource(recorder!!.outputFile!!.absolutePath)
-//            player!!.setAudioAttributes(
-//                AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-//                    .setUsage(AudioAttributes.USAGE_MEDIA)
-//                    .build()
-//            )
+            Log.i("path playing",archivo!!.absolutePath)
+            player!!.setDataSource(archivo!!.absolutePath)
         } catch (e: IOException) {
         }
         try {
@@ -229,6 +226,7 @@ class MainActivity : AppCompatActivity(),
         } catch (e: IOException) {
         }
         player?.start()
+
 
 
     }
@@ -280,6 +278,7 @@ class MainActivity : AppCompatActivity(),
 //        recorder.start()
         statusChangeDetector.startMonitoring()
         recordingButton.setBackgroundResource(R.drawable.ic_baseline_stop_circle_24)
+        startRecordingFile()
     }
 
     private fun stopRecording() {
@@ -288,6 +287,7 @@ class MainActivity : AppCompatActivity(),
         recordingButton.setBackgroundResource(R.drawable.ic_baseline_fiber_manual_record_24)
         speechTextView.text = "Start recording"
         statusChangeDetector.stopMonitoring()
+        stopRecordingFile()
 
     }
 
